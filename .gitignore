@@ -1,0 +1,5 @@
+.Rproj.user
+data/*.parquet
+data/*.duckdb
+data/**/*
+.DS_Store
