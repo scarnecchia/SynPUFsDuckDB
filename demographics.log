@@ -1,0 +1,351 @@
+
+real	0m5.178s
+user	0m1.871s
+sys	0m0.153s
+                 The SAS System                             19:14 Wednesday, April 3, 2024
+
+NOTE: Unable to open SASUSER.PROFILE. WORK.PROFILE will be opened instead.
+NOTE: All profile changes will be lost at the end of the session.
+NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA.
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M5)
+      Licensed to HARVARD PILGRIM HEALTH CARE INC, Site 70225119.
+NOTE: This session is executing on the Linux 3.10.0-1160.105.1.el7.x86_64 (LIN X64) platform.
+
+
+
+NOTE: Updated analytical products:
+
+      SAS/STAT 14.3
+      SAS/ETS 14.3
+      SAS/IML 14.3
+
+NOTE: Additional host information:
+
+ Linux LIN X64 3.10.0-1160.105.1.el7.x86_64 #1 SMP Mon Nov 6 06:58:51 EST 2023 x86_64 Red Hat Enterprise Linux Server release 7.9
+      (Maipo)
+
+You are running SAS 9. Some SAS 8 files will be automatically converted
+by the V9 engine; others are incompatible.  Please see
+http://support.sas.com/rnd/migration/planning/platform/64bit.html
+
+PROC MIGRATE will preserve current SAS file attributes and is
+recommended for converting all your SAS libraries from any
+SAS 8 release to SAS 9.  For details and examples, please see
+http://support.sas.com/rnd/migration/index.html
+
+
+This message is contained in the SAS news file, and is presented upon
+initialization.  Edit the file "news" in the "misc/base" directory to
+display site-specific news and information in the program log.
+The command line option "-nonews" will prevent this display.
+
+
+
+
+NOTE: SAS initialization used:
+      real time           0.75 seconds
+      cpu time            0.02 seconds
+
+
+NOTE: AUTOEXEC processing beginning; file is /apps/sas/sashome/SASFoundation/9.4/autoexec.sas.
+
+1          %let _saswork=%sysfunc(getoption(WORK));
+2          %put &=_saswork;
+_SASWORK=/apps/temp4/saswork4/SAS_workD24B00022AD1_lnapp053.hphc.org
+3
+4          %let _sasutil=%sysfunc(getoption(UTILLOC));
+5          %put &=_sasutil;
+_SASUTIL="/apps/temp1/sasutil1"
+6
+
+NOTE: AUTOEXEC processing completed.
+
+1          options FULLSTIMER;
+2
+2                                                          The SAS System                             19:14 Wednesday, April 3, 2024
+
+3          libname synpufs "/apps/socprojects/dmqa/users/dscarnec/SynPUFsDuckDB/data/";
+NOTE: Libref SYNPUFS was successfully assigned as follows:
+      Engine:        V9
+      Physical Name: /apps/socprojects/dmqa/users/dscarnec/SynPUFsDuckDB/data
+4
+5          proc format;
+6            value agecat_years
+7            .       = "00. Missing"
+8            low-<0  = "00. Negative"
+9            0-<2    = "01. 0-1 yrs"
+10           2-<5    = "02. 2-4 yrs"
+11           5-<10   = "03. 5-9 yrs"
+12           10-<15  = "04. 10-14 yrs"
+13           15-<19  = "05. 15-18 yrs"
+14           19-<22  = "06. 19-21 yrs"
+15           22-<25  = "07. 22-24 yrs"
+16           25-<35 = "08. 25-34 yrs"
+17           35-<45 = "09. 35-44 yrs"
+18           45-<55 = "10. 45-54 yrs"
+19           55-<60 = "11. 55-59 yrs"
+20           60-<65 = "12. 60-64 yrs"
+21           65-<70 = "13. 65-69 yrs"
+22           70-<75 = "14. 70-74 yrs"
+23           75-high = "15. 75+ yrs"
+24           ;
+NOTE: Format AGECAT_YEARS has been output.
+25         run;
+
+NOTE: PROCEDURE FORMAT used (Total process time):
+      real time           0.00 seconds
+      user cpu time       0.00 seconds
+      system cpu time     0.00 seconds
+      memory              306.90k
+      OS Memory           6820.00k
+      Timestamp           04/03/2024 07:14:55 PM
+      Step Count                        1  Switch Count  0
+      Page Faults                       0
+      Page Reclaims                     121
+      Page Swaps                        0
+      Voluntary Context Switches        4
+      Involuntary Context Switches      0
+      Block Input Operations            0
+      Block Output Operations           56
+
+
+26
+27         proc sql noprint;
+28         create table _dem_l2_age as
+29         select floor((intck("month",birth_date,"31Dec2010"d)-(day("31Dec2010"d)<day(birth_date)))/12) as age_years label="Age
+29       ! (Years)"
+30              ,  sex
+31              ,  hispanic
+32              ,  race
+33              ,  count(*) as count format=comma16.
+34         from synpufs.demographic
+35         group by calculated age_years, sex, hispanic, race;
+NOTE: Table WORK._DEM_L2_AGE created, with 600 rows and 5 columns.
+
+3                                                          The SAS System                             19:14 Wednesday, April 3, 2024
+
+36         quit;
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           1.35 seconds
+      user cpu time       1.81 seconds
+      system cpu time     0.10 seconds
+      memory              110780.82k
+      OS Memory           119148.00k
+      Timestamp           04/03/2024 07:14:57 PM
+      Step Count                        2  Switch Count  0
+      Page Faults                       10
+      Page Reclaims                     27741
+      Page Swaps                        0
+      Voluntary Context Switches        2354
+      Involuntary Context Switches      3
+      Block Input Operations            3288
+      Block Output Operations           136
+
+
+37
+38         proc sql noprint;
+39              create table dem_l2_agecat_catvars as
+40              select put(age_years,agecat_years.) as agecat_years label="Age Category (Years)"
+41              ,  sex
+42              ,  hispanic
+43              ,  race
+44              ,  sum(count) as count format=comma16.
+45              from _dem_l2_age
+46              group by calculated agecat_years, sex, hispanic, race
+47              order by calculated agecat_years;
+NOTE: Table WORK.DEM_L2_AGECAT_CATVARS created, with 64 rows and 5 columns.
+
+48         quit;
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      user cpu time       0.01 seconds
+      system cpu time     0.00 seconds
+      memory              6094.07k
+      OS Memory           15784.00k
+      Timestamp           04/03/2024 07:14:57 PM
+      Step Count                        3  Switch Count  0
+      Page Faults                       0
+      Page Reclaims                     441
+      Page Swaps                        0
+      Voluntary Context Switches        29
+      Involuntary Context Switches      0
+      Block Input Operations            0
+      Block Output Operations           136
+
+
+49
+50         proc sql noprint;
+51              create table dem_l2_agecat as
+52              select agecat_years
+53              ,  sum(count) as count format=comma16.
+54              from dem_l2_agecat_catvars
+55              group by agecat_years;
+NOTE: Table WORK.DEM_L2_AGECAT created, with 8 rows and 2 columns.
+
+4                                                          The SAS System                             19:14 Wednesday, April 3, 2024
+
+56         quit;
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      user cpu time       0.00 seconds
+      system cpu time     0.00 seconds
+      memory              5318.84k
+      OS Memory           15784.00k
+      Timestamp           04/03/2024 07:14:57 PM
+      Step Count                        4  Switch Count  0
+      Page Faults                       1
+      Page Reclaims                     67
+      Page Swaps                        0
+      Voluntary Context Switches        2
+      Involuntary Context Switches      0
+      Block Input Operations            144
+      Block Output Operations           136
+
+
+57
+58         proc print data=dem_l2_agecat_catvars; run;
+
+                                                           The SAS System                         19:14 Wednesday, April 3, 2024   1
+
+                                Obs    agecat_years     Sex    hispanic    race               count
+
+                                  1    08. 25-34 yrs     F        N         5                 7,051
+                                  2    08. 25-34 yrs     F        U         0                   562
+                                  3    08. 25-34 yrs     F        U         3                 2,777
+                                  4    08. 25-34 yrs     F        Y         0                   722
+                                  5    08. 25-34 yrs     M        N         5                 8,789
+                                  6    08. 25-34 yrs     M        U         0                   723
+                                  7    08. 25-34 yrs     M        U         3                 3,176
+                                  8    08. 25-34 yrs     M        Y         0                   947
+                                  9    09. 35-44 yrs     F        N         5                16,508
+                                 10    09. 35-44 yrs     F        U         0                   765
+                                 11    09. 35-44 yrs     F        U         3                 5,205
+                                 12    09. 35-44 yrs     F        Y         0                   981
+                                 13    09. 35-44 yrs     M        N         5                18,238
+                                 14    09. 35-44 yrs     M        U         0                 1,081
+                                 15    09. 35-44 yrs     M        U         3                 5,442
+                                 16    09. 35-44 yrs     M        Y         0                 1,440
+                                 17    10. 45-54 yrs     F        N         5                35,482
+                                 18    10. 45-54 yrs     F        U         0                 1,546
+                                 19    10. 45-54 yrs     F        U         3                 9,923
+                                 20    10. 45-54 yrs     F        Y         0                 1,559
+                                 21    10. 45-54 yrs     M        N         5                37,819
+                                 22    10. 45-54 yrs     M        U         0                 1,914
+                                 23    10. 45-54 yrs     M        U         3                10,593
+                                 24    10. 45-54 yrs     M        Y         0                 2,070
+                                 25    11. 55-59 yrs     F        N         5                25,578
+                                 26    11. 55-59 yrs     F        U         0                 1,298
+                                 27    11. 55-59 yrs     F        U         3                 7,189
+                                 28    11. 55-59 yrs     F        Y         0                   948
+                                 29    11. 55-59 yrs     M        N         5                26,709
+                                 30    11. 55-59 yrs     M        U         0                 1,510
+                                 31    11. 55-59 yrs     M        U         3                 6,572
+                                 32    11. 55-59 yrs     M        Y         0                 1,160
+                                 33    12. 60-64 yrs     F        N         5                29,509
+                                 34    12. 60-64 yrs     F        U         0                 1,620
+                                 35    12. 60-64 yrs     F        U         3                 7,944
+                                 36    12. 60-64 yrs     F        Y         0                 1,012
+                                 37    12. 60-64 yrs     M        N         5                30,506
+                                 38    12. 60-64 yrs     M        U         0                 1,832
+                                 39    12. 60-64 yrs     M        U         3                 6,938
+                                 40    12. 60-64 yrs     M        Y         0                 1,179
+                                 41    13. 65-69 yrs     F        N         5               150,210
+                                 42    13. 65-69 yrs     F        U         0                 8,305
+                                 43    13. 65-69 yrs     F        U         3                20,138
+                                 44    13. 65-69 yrs     F        Y         0                 3,311
+                                 45    13. 65-69 yrs     M        N         5               133,800
+                                 46    13. 65-69 yrs     M        U         0                 7,780
+                                 47    13. 65-69 yrs     M        U         3                15,786
+                                 48    13. 65-69 yrs     M        Y         0                 2,866
+                                 49    14. 70-74 yrs     F        N         5               208,263
+                                 50    14. 70-74 yrs     F        U         0                11,318
+                                 51    14. 70-74 yrs     F        U         3                24,958
+                                 52    14. 70-74 yrs     F        Y         0                 4,361
+                                 53    14. 70-74 yrs     M        N         5               180,123
+                                 54    14. 70-74 yrs     M        U         0                10,035
+                                 55    14. 70-74 yrs     M        U         3                18,373
+                                 56    14. 70-74 yrs     M        Y         0                 3,540
+                                                           The SAS System                         19:14 Wednesday, April 3, 2024   2
+
+                                          agecat_
+                                 Obs       years       Sex    hispanic    race               count
+
+                                  57    15. 75+ yrs     F        N         5               563,744
+                                  58    15. 75+ yrs     F        U         0                24,233
+                                  59    15. 75+ yrs     F        U         3                56,404
+                                  60    15. 75+ yrs     F        Y         0                15,483
+                                  61    15. 75+ yrs     M        N         5               377,326
+                                  62    15. 75+ yrs     M        U         0                16,796
+                                  63    15. 75+ yrs     M        U         3                30,563
+                                  64    15. 75+ yrs     M        Y         0                10,206
+NOTE: There were 64 observations read from the data set WORK.DEM_L2_AGECAT_CATVARS.
+NOTE: The PROCEDURE PRINT printed pages 1-2.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           2.21 seconds
+      user cpu time       0.01 seconds
+      system cpu time     0.00 seconds
+      memory              2359.34k
+      OS Memory           10660.00k
+      Timestamp           04/03/2024 07:14:59 PM
+      Step Count                        5  Switch Count  1
+      Page Faults                       9
+      Page Reclaims                     666
+      Page Swaps                        0
+      Voluntary Context Switches        35
+      Involuntary Context Switches      1
+      Block Input Operations            1440
+      Block Output Operations           0
+
+
+59         proc print data=dem_l2_agecat; run;
+
+                                                           The SAS System                         19:14 Wednesday, April 3, 2024   3
+
+                                              Obs    agecat_years                count
+
+                                               1     08. 25-34 yrs              24,747
+                                               2     09. 35-44 yrs              49,660
+                                               3     10. 45-54 yrs             100,906
+                                               4     11. 55-59 yrs              70,964
+                                               5     12. 60-64 yrs              80,540
+                                               6     13. 65-69 yrs             342,196
+                                               7     14. 70-74 yrs             460,971
+                                               8     15. 75+ yrs             1,094,755
+NOTE: There were 8 observations read from the data set WORK.DEM_L2_AGECAT.
+NOTE: The PROCEDURE PRINT printed page 3.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      user cpu time       0.00 seconds
+      system cpu time     0.00 seconds
+      memory              340.40k
+      OS Memory           10660.00k
+      Timestamp           04/03/2024 07:14:59 PM
+      Step Count                        6  Switch Count  0
+      Page Faults                       0
+      Page Reclaims                     19
+      Page Swaps                        0
+      Voluntary Context Switches        0
+      Involuntary Context Switches      0
+      Block Input Operations            0
+5                                                          The SAS System                             19:14 Wednesday, April 3, 2024
+
+      Block Output Operations           0
+
+
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           4.49 seconds
+      user cpu time       1.85 seconds
+      system cpu time     0.12 seconds
+      memory              116897.26k
+      OS Memory           119148.00k
+      Timestamp           04/03/2024 07:14:59 PM
+      Step Count                        6  Switch Count  24
+      Page Faults                       69
+      Page Reclaims                     35063
+      Page Swaps                        0
+      Voluntary Context Switches        2767
+      Involuntary Context Switches      6
+      Block Input Operations            20168
+      Block Output Operations           520
