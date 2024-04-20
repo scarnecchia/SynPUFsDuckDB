@@ -2,4 +2,11 @@
 data/*.parquet
 data/*.duckdb
 data/**/*
+parquet/*.parquet
+parquet/*.duckdb
+parquet_tmp/*.parquet
+parquet_tmp/*.duckdb
+output/*.parquet
+*.duckdb
+*.duckdb.wal
 .DS_Store
