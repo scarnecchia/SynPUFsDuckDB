@@ -1,5 +1,4 @@
 # Script for converting SAS datasets to Parquet format with Snappy compression using DuckDB
-# Use with caution, this took about an hour on my machine (a MBP M3 w/ 16 GB of RAM)
 
 ptm <- proc.time()
 
@@ -49,7 +48,6 @@ construct_query <- function(len, table, id_var, part) {
   print(proc.time() - ptm)
 }
 
-con <- DBI::dbConnect(duckdb::duckdb(dbdir = "duckdb.duckdb"))
 purrr::walk(c("death", "diagnosis", "dispensing", "enrollment", "procedure"), function(t) {
   purrr::walk(1:20, function(i) {
     fs::file_copy(paste0("parquet/", t, "-", i, "-snappy.parquet"), paste0("parquet_tmp/", t, "-", i, "-snappy.parquet"), overwrite = TRUE)
@@ -176,11 +174,11 @@ purrr::walk(c("Encounter"), function(t) {
 
 clean_source("facility", "FacilityID")
 
-# EncountedID
+# EncounterID
 
 purrr::walk(c("Diagnosis", "Procedure"), function(t) {
   purrr::walk(1:20, function(i) {
-    replace_orig(t, "FacilityID", i, "facility")
+    replace_orig(t, "EncounterID", i, "Encounter")
 
   })
 })
@@ -214,7 +212,8 @@ purrr::walk(c("death",
 
    })
 
-   print(paste("Time to assemble", t, "is", proc.time() - ptm))
+   print(paste("Time to assemble", t, "is:"))
+   print(proc.time() - ptm)
 })
 
 DBI::dbDisconnect(con, shutdown = TRUE)
